@@ -1,5 +1,6 @@
-PwdAwMan.class: PwdAwMan.java MainFrame.class
-	javac PwdAwMan.java
 
-MainFrame.class: MainFrame.java
-	javac MainFrame.java
+LIBDIR=..\lib\jasypt-1.9.3\lib\jasypt-1.9.3.jar
+
+PwdAwMan.class: PwdAwMan.java
+	javac -cp $(LIBDIR) PwdAwMan.java 
+
