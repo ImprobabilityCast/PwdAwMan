@@ -17,6 +17,8 @@ public class PwdAwMan {
     private static List<List<String>> table
             = new LinkedList<List<String>>();
 
+    private static boolean isModified = false;
+
     private PwdAwMan() {
     }
 
@@ -51,7 +53,6 @@ public class PwdAwMan {
 
     private static void printSyntax() {
         System.out.println("Command syntax:\n"
-            + "list\n"
             + "replace <id> COL_NAME <replacement>\n"
             + "show <id> COL_NAME\n"
             + "copy <id> COL_NAME\n"
@@ -59,17 +60,49 @@ public class PwdAwMan {
             + "Where COL_NAME is one of: <all|place|type|url|username|password|note>\n"
             + "Omiting arguments from add will keep those fields blank.\n"
             + "If the 'all' option is selected, then <replacement> has the same\n"
-            + "syntax as add."
+            + "syntax as add.\n"
+            + "If no arguments are supplied to show, it will show all"
         );
     }
 
-    private static void show(List<String> cmd) {
-        int id = Integer.parseInt(cmd.get(1));
-        int idx = (2 < cmd.size()) ? ParseUtil.parseColName(cmd.get(2)) : -1;
-        if (idx == -1) {
+    private static void show(List<String> cmd, int id, int idx) {
+        if (id < 0) {
+            DisplayUtil.printTable(table);
+        } else if (idx < 0) {
             DisplayUtil.printRow(table, id);
         } else {
             System.out.println(table.get(id).get(idx));
+        }
+    }
+
+    // case where id < 0 not checked
+    private static String replace(List<String> cmd, int id, int idx) {
+        // replace <id> COL_NAME <replacement>
+        if (idx >= 0 && 3 < cmd.size()) {
+            String replacement = cmd.get(3);
+            // +1 to idx because disply has the ID column as 0
+            // but table has PLACE column as 0
+            DisplayUtil.updatePadding(replacement, idx + 1);
+            table.get(id).set(idx, cmd.get(3));
+            return "";
+        } else {
+            return "replace: invalid command syntax";
+        }
+    }
+
+    private static String add(List<String> cmd) {
+        // remove "add" from the start of the list
+        cmd.remove(0);
+        
+        final int numCols = 6;
+        if (cmd.size() <= numCols) {
+            while (cmd.size() < numCols) {
+                cmd.add("");
+            }
+            table.add(cmd);
+            return "";
+        } else {
+            return "add: too many arguments";
         }
     }
 
@@ -77,24 +110,33 @@ public class PwdAwMan {
         Scanner sc = new Scanner(System.in);
         while (true) {
             System.out.print("> ");
+            String errMsg = "";
             try {
                 List<String> cmd = ParseUtil.splitWithQuotes(sc.nextLine(), ' ');
-                if (cmd.get(0).equals("list")) {
-                    DisplayUtil.printTable(table);
+                int id = (1 < cmd.size()) ? ParseUtil.parsePositiveInt(cmd.get(1)) : -1;
+                int idx = (2 < cmd.size()) ? ParseUtil.parseColName(cmd.get(2)) : -1;
+
+                if (cmd.get(0).equals("show")) {
+                    show(cmd, id, idx);
                 } else if (cmd.get(0).equals("replace")) {
-                    
-                } else if (cmd.get(0).equals("show")) {
-                    show(cmd);
+                    errMsg = replace(cmd, id, idx);
                 } else if (cmd.get(0).equals("copy")) {
                     
                 } else if (cmd.get(0).equals("add")) {
-                    //id place type url username pwd note
-                } else {
+                    errMsg = add(cmd);
+                } else if (cmd.get(0).equals("exit")) {
+                    break;
+                } else if (cmd.get(0).equals("help")) {
                     printSyntax();
+                } else {
+                    errMsg = "unrecognized command: " + cmd.get(0) + "\n"
+                        + "try 'help' to see a list of available commands.";
                 }
             } catch (Exception e) {
-                // TODO: make this bit more user friendly
-                System.err.println(e.getMessage());
+                errMsg = e.getMessage();
+            }
+            if (errMsg.length() > 0) {
+                System.err.println(errMsg);
             }
         }
     }

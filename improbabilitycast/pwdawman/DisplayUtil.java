@@ -56,12 +56,16 @@ public class DisplayUtil {
         return sb.toString();
     }
 
+    public static void updatePadding(String item, int col) {
+        int itemLen = item.length();
+        if (itemLen > padArr[col].length()) {
+            padArr[col] = makePaddingBigger(padArr[col], itemLen + 1);
+        }
+    }
+
     public static void updatePadding(List<String> list) {
-        for (int i = 1; i < padArr.length; i++) {
-            int itemLen = list.get(i).length();
-            if (itemLen > padArr[i].length()) {
-                padArr[i] = makePaddingBigger(padArr[i], itemLen + 1);
-            }
+        for (int i = 0; i < padArr.length; i++) {
+            updatePadding(list.get(i), i);
         }
     }
 }

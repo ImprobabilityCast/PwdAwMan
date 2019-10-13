@@ -56,4 +56,15 @@ public class ParseUtil {
         return (idx < cols.length) ? idx : -1;
     }
 
+    // returns < 0 if string s cannot be parsed as a positive int
+    public static int parsePositiveInt(String s) {
+        int i;
+        try {
+            i = Integer.parseInt(s);
+        } catch (Exception e) {
+            i = -1;
+        }
+        return i;
+    }
+
 }
