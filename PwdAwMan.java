@@ -2,6 +2,7 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,14 @@ public class PwdAwMan {
     private static final int USERNAME = 3;
     private static final int PASSWORD = 4;
     private static final int NOTE = 5;
+    private static final int WIDTH = 80;
+
+    private static String[] padArr = new String[] {
+        // username is last so it does not need padding
+        // id     place   type     url     
+        "   ", "      ", "     ", "    ", ""
+    };
+
     private static List<List<String>> table
             = new LinkedList<List<String>>();
 
@@ -75,9 +84,31 @@ public class PwdAwMan {
         return list;
     }
 
+    private static String makePaddingBigger(String start, int newLength) {
+        StringBuilder sb = new StringBuilder(newLength);
+        sb.append(start);
+        char[] newSpaces = new char[newLength - start.length()];
+        Arrays.fill(newSpaces, ' ');
+        sb.append(newSpaces);
+        return sb.toString();
+    }
+
+    private static void updatePadding(List<String> list) {
+        for (int i = 1; i < padArr.length; i++) {
+            int itemLen = list.get(i).length();
+            if (itemLen > padArr[i].length()) {
+                padArr[i] = makePaddingBigger(padArr[i], itemLen + 1);
+            }
+        }
+    }
+
     private static void parseCSV(String csv) {
         for (String s : csv.split("\n|\r\n")) {
-            PwdAwMan.table.add(splitWithQuotes(s, ','));
+            List<String> row = splitWithQuotes(s, ',');
+            row.add(0, String.valueOf(table.size()));
+            updatePadding(row);
+            row.remove(0);
+            PwdAwMan.table.add(row);
         }
     }
 
@@ -89,21 +120,71 @@ public class PwdAwMan {
     }
 
     private static void printHeaders() {
-        System.out.println("ID\tPLACE\t\tTYPE\tURL\t\tUSERNAME");
+        List<String> list =
+            List.of("ID", "PLACE", "TYPE", "URL", "USERNAME");
+        String s = fmtRow(list);
+        System.out.println(s);
     }
 
-    private static String fmtRow(List<String> row, int rowNum) {
-        StringBuilder sb = new StringBuilder(80);
-        sb.append(rowNum);
-        sb.append('\t');
-        sb.append(row.get(PLACE));
-        sb.append('\t');
-        sb.append(row.get(TYPE));
-        sb.append('\t');
-        sb.append(row.get(URL));
-        sb.append('\t');
-        sb.append(row.get(USERNAME));
+    private static void printTable() {
+        printHeaders();
+        for (int i = 0; i < table.size(); i++) {
+            printRow(i);
+        }
+    }
+
+    private static String fmtRow(List<String> row) {
+        StringBuilder sb = new StringBuilder(WIDTH);
+        for (int i = 0; i < row.size(); i++) {
+            String item = row.get(i);
+            sb.append(item);
+            sb.append(padArr[i].substring(item.length()));
+        }
         return sb.toString();
+    }
+
+    private static void printSyntax() {
+        System.out.println("Command syntax:\n"
+            + "list\n"
+            + "replace <id> COL_NAME <replacement>\n"
+            + "show <id> COL_NAME\n"
+            + "copy <id> COL_NAME\n"
+            + "add <place> <type> <url> <username> <password> <note>\n"
+            + "Where COL_NAME is one of: <all|place|type|url|username|password|note>\n"
+            + "Omiting arguments from add will keep those fields blank.\n"
+            + "If the 'all' option is selected, then <replacement> has the same\n"
+            + "syntax as add."
+        );
+    }
+
+    private static int parseColName(String col) {
+        String[] cols = new String[] {
+            "place", "type", "url", "username", "password", "note"
+        };
+        // array is small enough that a linear search is good enough
+        int idx = 0;
+        while (idx < cols.length && !cols[idx].equals(col)) {
+            idx++;
+        }
+        return (idx < cols.length) ? idx : -1;
+    }
+
+    private static void printRow(List<List<String>> table, int id) {
+        List<String> list = table.get(id);
+        list.add(0, String.valueOf(id));
+        String row = fmtRow(list.subList(0, list.size() - 2));
+        System.out.println(row);
+        list.remove(0);
+    }
+
+    private static void show(List<String> cmd) {
+        int id = Integer.parseInt(cmd.get(1));
+        int idx = (2 < cmd.size()) ? parseColName(cmd.get(2)) : -1;
+        if (idx == -1) {
+            printRow(id);
+        } else {
+            System.out.println(table.get(id).get(idx));
+        }
     }
 
     private static void prompt() {
@@ -112,34 +193,22 @@ public class PwdAwMan {
             System.out.print("> ");
             try {
                 List<String> cmd = splitWithQuotes(sc.nextLine(), ' ');
-                System.out.println(":" + cmd.toString());
                 if (cmd.get(0).equals("list")) {
-                    printHeaders();
-                    for (int i = 0; i < table.size(); i++) {
-                        System.out.println(fmtRow(table.get(i), i));
-                    }
+                    printTable();
                 } else if (cmd.get(0).equals("replace")) {
                     
                 } else if (cmd.get(0).equals("show")) {
-
+                    show(cmd);
                 } else if (cmd.get(0).equals("copy")) {
                     
                 } else if (cmd.get(0).equals("add")) {
                     //id place type url username pwd note
-                    
+                } else {
+                    printSyntax();
                 }
             } catch (Exception e) {
-                System.out.println("Command syntax:\n"
-                    + "list\n"
-                    + "replace <id> TYPE <replacement>\n"
-                    + "show <id> TYPE\n"
-                    + "copy <id> TYPE\n"
-                    + "add <place> <type> <url> <username> <password> <note>\n"
-                    + "Where TYPE is one of: <all|place|type|url|username|password|note>\n"
-                    + "Omiting arguments from add will keep those fields blank.\n"
-                    + "If the 'all' option is selected, then <replacement> has the same\n"
-                    + "syntax as add."
-                );
+                // TODO: make this bit more user friendly
+                System.err.println(e.getMessage());
             }
         }
     }
