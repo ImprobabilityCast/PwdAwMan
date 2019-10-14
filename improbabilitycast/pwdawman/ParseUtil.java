@@ -12,7 +12,8 @@ public class ParseUtil {
 
          while (end < line.length()
                 && (line.charAt(end) != sep || quotes % 2 != 0)) {
-            if (line.charAt(end) == '"') {
+            if (line.charAt(end) == '"'
+                    && end - 1 >= 0 && line.charAt(end - 1) != '\\') {
                 quotes++;
             }
             end++;
@@ -42,6 +43,34 @@ public class ParseUtil {
             row.remove(0);
             table.add(row);
         }
+    }
+
+    private static String csvEscape(String s) {
+        s = s.replaceAll("\"", "\\\"");
+        if (s.contains(",")) {
+            s = "\"" + s + "\"";
+        }
+        return s;
+    }
+
+    // every list in the list must have size > 0
+    public static String toCSV(List<List<String>> table) {
+        // assuming about 100 chars per line
+        StringBuilder sb = new StringBuilder(table.size() * 100);
+
+        for (int i = 0; i < table.size(); i++) {
+            List<String> line = table.get(i);
+            String escaped = csvEscape(line.get(0));
+            sb.append(escaped);
+            for (int j = 1; j < line.size(); j++) {
+                sb.append(',');
+                escaped = csvEscape(line.get(j));
+                sb.append(escaped);
+            }
+            sb.append('\n');
+        }
+
+        return sb.toString();
     }
 
     public static int parseColName(String col) {
