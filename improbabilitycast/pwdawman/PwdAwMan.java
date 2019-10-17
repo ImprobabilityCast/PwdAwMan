@@ -143,7 +143,7 @@ public class PwdAwMan {
     }
 
     private static String show(List<String> cmd, int id, int idx) {
-        if (id < 0) {
+        if (id < 0 || id > dataTable.size()) {
             DisplayUtil.printTable(dataTable);
         } else if (idx < 0) {
             DisplayUtil.printRow(dataTable, id);
@@ -175,12 +175,13 @@ public class PwdAwMan {
         // since there are DisplayUtil.PAD_COLS - 1 editable columns,
         // and one non-editable one. cmd starts with "add", which acts
         // as a placeholder for the id value.
+        cmd.set(0, String.valueOf(dataTable.size()));
         if (cmd.size() <= DisplayUtil.PAD_COLS) {
             // if not enough args, pad it with empty values
             while (cmd.size() < DisplayUtil.PAD_COLS) {
                 cmd.add("");
             }
-            // remove "add" from the start of the list
+            DisplayUtil.updatePadding(cmd);
             cmd.remove(0);
             dataTable.add(cmd);
             isModified = true;
@@ -245,7 +246,11 @@ public class PwdAwMan {
     }
 
     private static void printHelp() {
-        System.out.println("halp.");
+        System.out.println("USAGE: <this> [OPTION] FILE\n"
+            + "OPTION:\n"
+            + "\t-p\tread file as a plain text CSV file\n"
+            + "FILE: a CSV file, possibly encrypted"
+        );
     }
 
     public static void main(final String[] args) {

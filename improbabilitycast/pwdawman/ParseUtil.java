@@ -60,7 +60,7 @@ public class ParseUtil {
 
         for (int i = 0; i < table.size(); i++) {
             List<String> line = table.get(i);
-            String escaped = csvEscape(line.get(0));
+            String escaped = csvEscape(line.get(i));
             sb.append(escaped);
             for (int j = 1; j < line.size(); j++) {
                 sb.append(',');

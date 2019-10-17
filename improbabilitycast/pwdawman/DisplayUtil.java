@@ -58,7 +58,7 @@ public class DisplayUtil {
         return sb.toString();
     }
 
-    // assumes that 0 < col < PAD_COLS
+    // assumes that col < PAD_COLS
     public static void updatePadding(String item, int col) {
         int itemLen = item.length();
         if (itemLen > padArr[col].length()) {
