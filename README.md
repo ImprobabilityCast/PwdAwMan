@@ -1,7 +1,10 @@
 # PwdAwMan
-Here there be creepers and encrypted passwords. The goals at this point are:
+Here there be creepers and encrypted passwords. At this point, this program can:
 
-* Ability to read and decrpyt a file full of passwords and things
-* Ability to encyrpt that same file with a password
-* Ability to modify/add passowrds and things
+* Read and decrpyt a file full of passwords and things
+* Encyrpt that same file with a password
+* Modify/add passowrds and things
 
+### To do
+* Fix CSV parser
+* Add a conf file thingy for default number of columns to display
