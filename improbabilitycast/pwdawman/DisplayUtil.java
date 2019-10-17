@@ -5,13 +5,14 @@ import java.util.List;
 
 public class DisplayUtil {
 
-    private static final int WIDTH = 80;
-
-    private static String[] padArr = new String[] {
-        // username is last so it does not need padding
-        // id     place   type     url     
-        "   ", "      ", "     ", "    ", ""
+    private static final String[] padArr = new String[] {
+        // padding after:
+        // id  place     type     url     username   pwd note
+        "   ", "      ", "     ", "    ", "       ", "", ""
     };
+
+    private static final int WIDTH = 80;
+    public static final int PAD_COLS = padArr.length;
 
     private DisplayUtil() {}
 
@@ -35,6 +36,7 @@ public class DisplayUtil {
     public static void printRow(List<List<String>> table, int id) {
         List<String> list = table.get(id);
         list.add(0, String.valueOf(id));
+        // -2 to skip pwd and note at end
         String row = fmtRow(list.subList(0, list.size() - 2));
         System.out.println(row);
         list.remove(0);
@@ -56,6 +58,7 @@ public class DisplayUtil {
         return sb.toString();
     }
 
+    // assumes that 0 < col < PAD_COLS
     public static void updatePadding(String item, int col) {
         int itemLen = item.length();
         if (itemLen > padArr[col].length()) {

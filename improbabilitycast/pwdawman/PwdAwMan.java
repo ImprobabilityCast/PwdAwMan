@@ -1,5 +1,8 @@
 package improbabilitycast.pwdawman;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.io.Console;
 import java.io.File;
 import java.io.FileReader;
@@ -54,17 +57,16 @@ public class PwdAwMan {
     // returns true on error
     private static boolean save(String filename, String data) {
         boolean ret = false;
-        FileWriter fr = null;
+        FileWriter fw = null;
         try {
-            File f = new File(filename);
-            fw = new FileWriter(f);
-            fr.write(data);
-            fr.close();
+            fw = new FileWriter(new File(filename));
+            fw.write(data);
+            fw.close();
         } catch (Exception e1) {
             ret = true;
             try {
-                if (fr != null) {
-                    fr.close();
+                if (fw != null) {
+                    fw.close();
                 }
             } catch (Exception e2) {
                 // Yup. Do nothing.
@@ -118,10 +120,10 @@ public class PwdAwMan {
     }
 
     // return false if save unsuccessful
-    private static boolean askSave(String filename, String data, AES256TextEncryptor enc) {
+    private static boolean askSave(Scanner in, String filename,
+            String data, AES256TextEncryptor enc) {
         boolean ret = false;
         System.out.print("Do you wish to save your changes? [Y/n] ");
-        Scanner in = Scanner(System.in);
         String line = in.nextLine();
 
         if (line.equals("y") || line.equals("Y")) {
@@ -169,20 +171,31 @@ public class PwdAwMan {
 
     // id & idx not used
     private static String add(List<String> cmd, int id, int idx) {
-        // remove "add" from the start of the list
-        cmd.remove(0);
-        
-        final int numCols = 6;
-        if (cmd.size() <= numCols) {
-            while (cmd.size() < numCols) {
+        // cmd should have at most DisplayUtil.PAD_COLS elements
+        // since there are DisplayUtil.PAD_COLS - 1 editable columns,
+        // and one non-editable one. cmd starts with "add", which acts
+        // as a placeholder for the id value.
+        if (cmd.size() <= DisplayUtil.PAD_COLS) {
+            // if not enough args, pad it with empty values
+            while (cmd.size() < DisplayUtil.PAD_COLS) {
                 cmd.add("");
             }
+            // remove "add" from the start of the list
+            cmd.remove(0);
             dataTable.add(cmd);
             isModified = true;
             return "";
         } else {
             return "add: too many arguments";
         }
+    }
+
+    private static String copy(List<String> cmd, int id, int idx) {
+        String data = dataTable.get(id).get(idx);
+        StringSelection sData = new StringSelection(data);
+        Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clip.setContents(sData, sData);
+        return "";
     }
 
     private static String processCmd(List<String> cmd, Map<String, Action> cmdTable) {
@@ -225,7 +238,7 @@ public class PwdAwMan {
     private static void initCmdTable(Map<String, Action> cmdTable) {
         cmdTable.put("show", (a, b, c) -> show(a, b, c));
         cmdTable.put("replace", (a, b, c) -> replace(a, b, c));
-        //cmdTable.add("copy", copy);
+        cmdTable.put("copy", (a, b, c) -> copy(a, b, c));
         cmdTable.put("add", (a, b, c) -> add(a, b, c));
         cmdTable.put("help", (a, b, c) -> getHelp(a, b, c));
         cmdTable.put("quit", (a, b, c) -> dummyQuit(a, b, c));
@@ -261,7 +274,7 @@ public class PwdAwMan {
         prompt(in, cmdTable);
         data = ParseUtil.toCSV(dataTable);
         
-        if (isModified && askSave(filename, data, enc)) {
+        if (isModified && askSave(in, filename, data, enc)) {
             // something went wrong
             do {
                 System.err.println("Couldn't save the file.");
