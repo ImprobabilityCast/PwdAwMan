@@ -25,16 +25,6 @@ public class PwdAwMan {
     private static boolean isModified = false;
     private static boolean isUnencrypted = false;
     private static List<List<String>> dataTable = new LinkedList<List<String>>();
-    private static Map<String, Action> cmdTable = new HashMap<>();
-
-    static {
-        cmdTable.put("show", (a, b, c) -> show(a, b, c));
-        cmdTable.put("replace", (a, b, c) -> replace(a, b, c));
-        //cmdTable.add("copy", copy);
-        cmdTable.put("add", (a, b, c) -> add(a, b, c));
-        cmdTable.put("help", (a, b, c) -> getHelp(a, b, c));
-        cmdTable.put("quit", (a, b, c) -> dummyQuit(a, b, c));
-    }
 
     private PwdAwMan() {}
 
@@ -128,14 +118,13 @@ public class PwdAwMan {
     }
 
     // return false if save unsuccessful
-    private static boolean askSave(String filename, AES256TextEncryptor enc) {
+    private static boolean askSave(String filename, String data, AES256TextEncryptor enc) {
         boolean ret = false;
         System.out.print("Do you wish to save your changes? [Y/n] ");
         Scanner in = Scanner(System.in);
         String line = in.nextLine();
 
         if (line.equals("y") || line.equals("Y")) {
-            String data = ParseUtil.toCSV(dataTable);
             if (isUnencrypted) {
                 System.out.print("Do you wish to encrypt the save file? [Y/n] ");
                 line = in.nextLine();
@@ -196,25 +185,32 @@ public class PwdAwMan {
         }
     }
 
-    private static void prompt() {
-        Scanner sc = new Scanner(System.in);
+    private static String processCmd(List<String> cmd, Map<String, Action> cmdTable) {
+        String msg;
+        String key = cmd.get(0);
+
+        int id = (1 < cmd.size()) ? ParseUtil.parsePositiveInt(cmd.get(1)) : -1;
+        int idx = (2 < cmd.size()) ? ParseUtil.parseColName(cmd.get(2)) : -1;
+
+        Action fn = cmdTable.get(key);
+        if (fn == null) {
+            msg = "unrecognized command: " + key + "\n"
+                + "try 'help' to see a list of available commands.";
+        } else {
+            msg = fn.process(cmd, id, idx);
+        }
+        return msg;
+    }
+
+    private static void prompt(Scanner in, Map<String, Action> cmdTable) {
         String key = "";
         do {
             System.out.print("> ");
             String errMsg = "";
             try {
-                List<String> cmd = ParseUtil.splitWithQuotes(sc.nextLine(), ' ');
+                List<String> cmd = ParseUtil.splitWithQuotes(in.nextLine(), ' ');
                 key = cmd.get(0);
-                int id = (1 < cmd.size()) ? ParseUtil.parsePositiveInt(cmd.get(1)) : -1;
-                int idx = (2 < cmd.size()) ? ParseUtil.parseColName(cmd.get(2)) : -1;
-
-                Action fn = cmdTable.get(key);
-                if (fn == null) {
-                    errMsg = "unrecognized command: " + key + "\n"
-                        + "try 'help' to see a list of available commands.";
-                } else {
-                    errMsg = fn.process(cmd, id, idx);
-                }
+                errMsg = processCmd(cmd, cmdTable);
             } catch (Exception e) {
                 errMsg = "Oops: " + e.getMessage()
                     + "\nProbably invalid command syntax. "
@@ -226,20 +222,27 @@ public class PwdAwMan {
         } while (!key.equals("quit"));
     }
 
+    private static void initCmdTable(Map<String, Action> cmdTable) {
+        cmdTable.put("show", (a, b, c) -> show(a, b, c));
+        cmdTable.put("replace", (a, b, c) -> replace(a, b, c));
+        //cmdTable.add("copy", copy);
+        cmdTable.put("add", (a, b, c) -> add(a, b, c));
+        cmdTable.put("help", (a, b, c) -> getHelp(a, b, c));
+        cmdTable.put("quit", (a, b, c) -> dummyQuit(a, b, c));
+    }
+
     private static void printHelp() {
         System.out.println("halp.");
     }
 
     public static void main(final String[] args) {
-
+        Map<String, Action> cmdTable = new HashMap<>();
         AES256TextEncryptor enc = new AES256TextEncryptor();
+        Scanner in = new Scanner(System.in);
         String data;
         String filename;
 
-        if (args.length == 0) {
-            printHelp();
-            return;
-        } else if (args.length == 1) {
+        if (args.length == 1) {
             filename = args[0];
             data = load(filename);
             setPwdAskOnce(enc);
@@ -254,10 +257,17 @@ public class PwdAwMan {
         }
 
         ParseUtil.parseCSV(dataTable, data);
-        prompt();
+        initCmdTable(cmdTable);
+        prompt(in, cmdTable);
+        data = ParseUtil.toCSV(dataTable);
         
-        if (isModified && askSave(filename)) {
+        if (isModified && askSave(filename, data, enc)) {
             // something went wrong
+            do {
+                System.err.println("Couldn't save the file.");
+                System.out.print("New file name (enter nothing to not save): ");
+                filename = in.nextLine();
+            } while (filename.length() > 0 && save(filename, data));
         }
     }
 }
