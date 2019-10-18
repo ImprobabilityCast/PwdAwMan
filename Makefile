@@ -3,6 +3,8 @@
 LIBS=../lib/jasypt-1.9.3/lib/jasypt-1.9.3.jar\;.
 DIR=improbabilitycast/pwdawman/
 
+all: $(DIR)PwdAwMan.class $(DIR)DisplayUtil.class $(DIR)ParseUtil.class
+
 $(DIR)PwdAwMan.class: $(DIR)DisplayUtil.class $(DIR)ParseUtil.class $(DIR)PwdAwMan.java
 	javac -cp $(LIBS) $(DIR)PwdAwMan.java
 
