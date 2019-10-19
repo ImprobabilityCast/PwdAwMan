@@ -25,12 +25,20 @@ public class PwdAwMan {
         public String process(List<String> cmd, int id, int idx);
     }
 
+    private static final int VERSION_MAJOR = 0;
+    private static final int VERSION_MINOR = 1;
+    
     private static boolean isModified = false;
     private static boolean isUnencrypted = false;
     private static List<List<String>> dataTable = new LinkedList<List<String>>();
 
     private PwdAwMan() {}
 
+    /*
+    * File I/O.
+    */
+
+    // if loading the file fails, this returns null
     private static String load(String filename) {
         String ret = null;
         FileReader fr = null;
@@ -59,9 +67,16 @@ public class PwdAwMan {
         boolean ret = false;
         FileWriter fw = null;
         try {
-            fw = new FileWriter(new File(filename));
+            // save in tmp file first to ensure something gets saved
+            File tmpFile = new File(filename + ".tmp");
+            File outFile = new File(filename);
+            fw = new FileWriter(tmpFile);
             fw.write(data);
             fw.close();
+            if (outFile.exists()) {
+                outFile.delete();
+            }
+            ret = !tmpFile.renameTo(outFile);
         } catch (Exception e1) {
             ret = true;
             try {
@@ -73,50 +88,6 @@ public class PwdAwMan {
             }
         }
         return ret;
-    }
-
-    private static void setPwdAskOnce(AES256TextEncryptor enc) {
-        Console console = System.console();
-        String fmt = "Password: ";
-        String pwd = new String(console.readPassword(fmt));
-        enc.setPassword(pwd);
-    }
-
-    private static void setPwdAskTwice(AES256TextEncryptor enc) {
-        Console console = System.console();
-        
-        while (true) {
-            String fmt = "Password: ";
-            String pwd = new String(console.readPassword(fmt));
-            String fmt2 = "Re-enter password: ";
-            String pwd2 = new String(console.readPassword(fmt));
-
-            if (pwd.equals(pwd2)) {
-                enc.setPassword(pwd);
-                return;
-            } else {
-                System.err.println("Passwords do not match.");
-            }
-        }
-    }
-
-    // all parameters are ignored
-    private static String getHelp(List<String> cmd, int id, int idx) {
-        return "Command syntax:\n"
-            + "replace <id> COL_NAME <replacement>\n"
-            + "show <id> COL_NAME\n"
-            + "copy <id> COL_NAME\n"
-            + "add <place> <type> <url> <username> <password> <note>\n"
-            + "Where COL_NAME is one of: <all|place|type|url|username|password|note>\n"
-            + "Omiting arguments from add will keep those fields blank.\n"
-            + "If the 'all' option is selected, then <replacement> has the same\n"
-            + "syntax as add.\n"
-            + "If no arguments are supplied to show, it will show all";
-    }
-
-    // once again, all parameters are ignored
-    private static String dummyQuit(List<String> cmd, int id, int idx) {
-        return "";
     }
 
     // return false if save unsuccessful
@@ -131,6 +102,8 @@ public class PwdAwMan {
                 System.out.print("Do you wish to encrypt the save file? [Y/n] ");
                 line = in.nextLine();
                 if (line.equals("y") || line.equals("Y")) {
+                    System.out.print("Enter new filename: ");
+                    filename = in.nextLine();
                     setPwdAskTwice(enc);
                     data = enc.encrypt(data);
                 }
@@ -140,37 +113,56 @@ public class PwdAwMan {
             ret = save(filename, data);
         }
         return ret;
+        // TODO: if save unsuccessful, but user said to encrypt,
+        // and the file gets saved in tryAgainSave, it will not
+        // be encrypted
     }
 
-    private static String show(List<String> cmd, int id, int idx) {
-        if (id < 0 || id > dataTable.size()) {
-            DisplayUtil.printTable(dataTable);
-        } else if (idx < 0) {
-            DisplayUtil.printRow(dataTable, id);
-        } else {
-            System.out.println(dataTable.get(id).get(idx));
+    private static void tryAgainSave(Scanner in, String data) {
+        String filename;
+        do {
+            System.err.println("Couldn't save the file.");
+            System.out.print("New file name (enter nothing to not save): ");
+            filename = in.nextLine();
+        } while (filename.length() > 0 && save(filename, data));
+    }
+
+    /*
+    * Password setting methods.
+    */
+
+    private static void setPwdAskOnce(AES256TextEncryptor enc) {
+        Console console = System.console();
+        String fmt = "Enter password: ";
+        String pwd = new String(console.readPassword(fmt));
+        enc.setPassword(pwd);
+    }
+
+    private static void setPwdAskTwice(AES256TextEncryptor enc) {
+        Console console = System.console();
+        
+        while (true) {
+            String fmt = "Enter password: ";
+            String pwd = new String(console.readPassword(fmt));
+            String fmt2 = "Re-enter password: ";
+            String pwd2 = new String(console.readPassword(fmt2));
+
+            if (pwd.equals(pwd2)) {
+                enc.setPassword(pwd);
+                return;
+            } else {
+                System.err.println("Passwords do not match.");
+            }
         }
-        return "";
+        // TODO: allow user to change their mind, e.g. not encrypt
+        // after saying 'yes, encrypt it'
     }
 
-    // case where id < 0 not checked
-    private static String replace(List<String> cmd, int id, int idx) {
-        // replace <id> COL_NAME <replacement>
-        if (idx >= 0 && 3 < cmd.size()) {
-            String replacement = cmd.get(3);
-            // +1 to idx because disply has the ID column as 0
-            // but dataTable has PLACE column as 0
-            DisplayUtil.updatePadding(replacement, idx + 1);
-            dataTable.get(id).set(idx, cmd.get(3));
-            isModified = true;
-            return "";
-        } else {
-            return "replace: invalid command syntax";
-        }
-    }
+    /*
+    * Command handlers.
+    */
 
-    // id & idx not used
-    private static String add(List<String> cmd, int id, int idx) {
+    private static String add(List<String> cmd) {
         // cmd should have at most DisplayUtil.PAD_COLS elements
         // since there are DisplayUtil.PAD_COLS - 1 editable columns,
         // and one non-editable one. cmd starts with "add", which acts
@@ -196,6 +188,65 @@ public class PwdAwMan {
         StringSelection sData = new StringSelection(data);
         Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
         clip.setContents(sData, sData);
+        return "";
+    }
+
+    private static String export() {
+        Scanner in = new Scanner(System.in);
+        System.out.print("Enter new filename: ");
+        String filename = in.nextLine();
+
+        String csv = ParseUtil.toCSV(dataTable);
+        if (save(filename, csv)) {
+            tryAgainSave(in, csv);
+        }
+
+        return "";
+    }
+
+    private static String promptHelp() {
+        return "Command syntax:\n"
+            + "show <id> COL_NAME\n"
+            + "replace <id> COL_NAME <replacement>\n"
+            + "copy <id> COL_NAME\n"
+            + "export - save as a plain text csv file\n"
+            + "add <place> <type> <url> <username> <password> <note>\n"
+            + "Where COL_NAME is one of: <all|place|type|url|username|password|note>\n"
+            + "Omiting arguments from add will keep those fields blank.\n"
+            + "If the 'all' option is selected, then <replacement> has the same\n"
+            + "syntax as add.\n"
+            + "If no arguments are supplied to show, it will show all";
+    }
+
+    // this method exists so that the "invaild command" msg doesn't print
+    private static String dummyQuit() {
+        return "";
+    }
+
+    // case where id < 0 not checked
+    private static String replace(List<String> cmd, int id, int idx) {
+        // replace <id> COL_NAME <replacement>
+        if (idx >= 0 && 3 < cmd.size()) {
+            String replacement = cmd.get(3);
+            // +1 to idx because disply has the ID column as 0
+            // but dataTable has PLACE column as 0
+            DisplayUtil.updatePadding(replacement, idx + 1);
+            dataTable.get(id).set(idx, cmd.get(3));
+            isModified = true;
+            return "";
+        } else {
+            return "replace: invalid command syntax";
+        }
+    }
+
+    private static String show(List<String> cmd, int id, int idx) {
+        if (id < 0 || id > dataTable.size()) {
+            DisplayUtil.printTable(dataTable);
+        } else if (idx < 0) {
+            DisplayUtil.printRow(dataTable, id);
+        } else {
+            System.out.println(dataTable.get(id).get(idx));
+        }
         return "";
     }
 
@@ -236,20 +287,27 @@ public class PwdAwMan {
         } while (!key.equals("quit"));
     }
 
+    /*
+     * Helper methods for main.
+     */
+
     private static void initCmdTable(Map<String, Action> cmdTable) {
-        cmdTable.put("show", (a, b, c) -> show(a, b, c));
-        cmdTable.put("replace", (a, b, c) -> replace(a, b, c));
+        cmdTable.put("add", (a, b, c) -> add(a));
         cmdTable.put("copy", (a, b, c) -> copy(a, b, c));
-        cmdTable.put("add", (a, b, c) -> add(a, b, c));
-        cmdTable.put("help", (a, b, c) -> getHelp(a, b, c));
-        cmdTable.put("quit", (a, b, c) -> dummyQuit(a, b, c));
+        cmdTable.put("export", (a, b, c) -> export());
+        cmdTable.put("help", (a, b, c) -> promptHelp());
+        cmdTable.put("quit", (a, b, c) -> dummyQuit());
+        cmdTable.put("replace", (a, b, c) -> replace(a, b, c));
+        cmdTable.put("show", (a, b, c) -> show(a, b, c));
     }
 
     private static void printHelp() {
-        System.out.println("USAGE: <this> [OPTION] FILE\n"
+        System.out.println("PwdAwMan v" + VERSION_MAJOR + "."
+            + VERSION_MINOR + " - A simple password manager.\n\n"
+            + "USAGE: <this> [OPTION] FILE\n"
             + "OPTION:\n"
             + "\t-p\tread file as a plain text CSV file\n"
-            + "FILE: a CSV file, possibly encrypted"
+            + "FILE: a CSV file, possibly encrypted\n"
         );
     }
 
@@ -281,11 +339,7 @@ public class PwdAwMan {
         
         if (isModified && askSave(in, filename, data, enc)) {
             // something went wrong
-            do {
-                System.err.println("Couldn't save the file.");
-                System.out.print("New file name (enter nothing to not save): ");
-                filename = in.nextLine();
-            } while (filename.length() > 0 && save(filename, data));
+            tryAgainSave(in, data);
         }
     }
 }
