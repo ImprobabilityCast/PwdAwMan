@@ -1,18 +1,20 @@
 package improbabilitycast.pwdawman;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class DisplayUtil {
 
-    private static final String[] padArr = new String[] {
-        // padding after:
-        // id  place     type     url     username   pwd note
-        "   ", "      ", "     ", "    ", "       ", "", ""
-    };
+    // should be 7 columns on normal use
+    private static final List<String> padArr = new ArrayList<> (7);
+    static {
+        while (padArr.size() < 7) {
+            padArr.add("");
+        }
+    }
 
     private static final int WIDTH = 80;
-    public static final int PAD_COLS = padArr.length;
 
     private DisplayUtil() {}
 
@@ -21,14 +23,20 @@ public class DisplayUtil {
         for (int i = 0; i < row.size(); i++) {
             String item = row.get(i);
             sb.append(item);
-            sb.append(padArr[i].substring(item.length()));
+            sb.append(padArr.get(i).substring(item.length()));
         }
         return sb.toString();
+    }
+
+    public static int getNumCols() {
+        return padArr.size();
     }
 
     public static void printHeaders() {
         List<String> list =
             List.of("ID", "PLACE", "TYPE", "URL", "USERNAME");
+        updatePaddingIDCol(list.get(0));
+        updatePaddingRow(list.subList(1, list.size()));
         String s = fmtRow(list);
         System.out.println(s);
     }
@@ -37,7 +45,8 @@ public class DisplayUtil {
         List<String> list = table.get(id);
         list.add(0, String.valueOf(id));
         // -2 to skip pwd and note at end
-        String row = fmtRow(list.subList(0, list.size() - 2));
+        int subtract = (list.size() >= 2) ? 2 : 0;
+        String row = fmtRow(list.subList(0, list.size() - subtract));
         System.out.println(row);
         list.remove(0);
     }
@@ -58,17 +67,32 @@ public class DisplayUtil {
         return sb.toString();
     }
 
+    public static void updatePaddingIDCol(String id) {
+        updatePaddingItem(id, 0);
+    }
+
     // assumes that col < PAD_COLS
-    public static void updatePadding(String item, int col) {
+    public static void updatePaddingItem(String item, int col) {
         int itemLen = item.length();
-        if (itemLen > padArr[col].length()) {
-            padArr[col] = makePaddingBigger(padArr[col], itemLen + 1);
+        while (col >= padArr.size()) {
+            padArr.add(" ");
+        }
+        if (itemLen >= padArr.get(col).length()) {
+            padArr.set(col, makePaddingBigger(padArr.get(col), itemLen + 1));
         }
     }
 
-    public static void updatePadding(List<String> list) {
-        for (int i = 0; i < padArr.length; i++) {
-            updatePadding(list.get(i), i);
+    // assumes list does not contain ids
+    public static void updatePaddingRow(List<String> list) {
+        for (int i = 0; i < list.size(); i++) {
+            updatePaddingItem(list.get(i), i + 1);
+        }
+    }
+    
+    public static void updatePaddingTable(List<List<String>> table) {
+        updatePaddingIDCol(String.valueOf(table.size()));
+        for (List<String> row : table) {
+            DisplayUtil.updatePaddingRow(row);
         }
     }
 }
