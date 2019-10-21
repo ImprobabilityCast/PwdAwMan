@@ -11,7 +11,7 @@ $(DIR)PwdAwMan.class: $(DIR)DisplayUtil.class $(DIR)ParseUtil.class $(DIR)PwdAwM
 $(DIR)DisplayUtil.class: $(DIR)DisplayUtil.java
 	javac -cp $(LIBS) $(DIR)DisplayUtil.java
 
-$(DIR)ParseUtil.class: $(DIR)DisplayUtil.class $(DIR)ParseUtil.java
+$(DIR)ParseUtil.class: $(DIR)ParseUtil.java
 	javac -cp $(LIBS) $(DIR)ParseUtil.java
 
 clean:
