@@ -67,7 +67,6 @@ public class ParseUtil {
             List<String> row = splitWithQuotes(s, ',');
             csvUnEscapeRow(row);
             row.add(0, String.valueOf(table.size()));
-            DisplayUtil.updatePadding(row);
             row.remove(0);
             table.add(row);
         }
