@@ -8,4 +8,4 @@ Here there be creepers and encrypted passwords. At this point, this program can:
 
 ## Building
 Nothing fancy. Run make. Note that this project uses [jasypt-1.9.3](https://github.com/jasypt/jasypt).
-Other version may work as well.
+Other versions may work as well.
