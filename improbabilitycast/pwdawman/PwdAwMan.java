@@ -407,39 +407,8 @@ public class PwdAwMan {
         );
     }
 
-    public static void main(final String[] args) {
-        Map<String, Action> cmdTable = new HashMap<>();
-        Scanner in = new Scanner(System.in);
-        String data;
-        String filename;
-
-        if (args.length == 1) {
-            filename = args[0];
-            data = load(filename);
-            setPwdAskOnce(enc);
-            try {
-                data = enc.decrypt(data);
-            } catch (EncryptionOperationNotPossibleException e) {
-                System.err.println("Wrong password?");
-                return;
-            }
-        } else if (args.length == 2 && args[0].equals("-p")) {
-            isEncrypted = false;
-            filename = args[1];
-            data = load(filename);
-        } else {
-            printHelp();
-            return;
-        }
-
-        ParseUtil.parseCSV(dataTable, data);
-        DisplayUtil.updatePaddingTable(dataTable);
-        dataTable.sort(new TableSort());
-
-        initCmdTable(cmdTable);
-        prompt(in, cmdTable);
-        data = ParseUtil.toCSV(dataTable);
-        
+    private static void cleanup(Scanner in, String filename) {
+        String data = ParseUtil.toCSV(dataTable);
         if (isModified && askSave(in, filename, data)) {
             // something went wrong
             if (isEncrypted) {
@@ -447,5 +416,50 @@ public class PwdAwMan {
             }
             tryAgainSave(in, data);
         }
+    }
+
+    private static void run(Scanner in, String data) {
+        Map<String, Action> cmdTable = new HashMap<>();
+
+        ParseUtil.parseCSV(dataTable, data);
+        DisplayUtil.updatePaddingTable(dataTable);
+        dataTable.sort(new TableSort());
+
+        initCmdTable(cmdTable);
+        prompt(in, cmdTable);
+    }
+
+    public static void main(final String[] args) {
+        Scanner in = new Scanner(System.in);
+        String filename;
+        // if only a filename is provided, then file is encrypted
+        isEncrypted = (args.length == 1);
+
+        if (args.length > 0) {
+            // filename is always last
+            filename = args[args.length - 1];
+        } else {
+            printHelp();
+            return;
+        }
+
+        String data = load(filename);
+        if (data == null) {
+            System.err.println("Could not load file: '" + filename + "'");
+            return;
+        }
+
+        if (isEncrypted) {
+            try {
+                setPwdAskOnce(enc);
+                data = enc.decrypt(data);
+            } catch (EncryptionOperationNotPossibleException e) {
+                System.err.println("Wrong password?");
+                return;
+            }
+        }
+
+        run(in, data);
+        cleanup(in, filename);
     }
 }
