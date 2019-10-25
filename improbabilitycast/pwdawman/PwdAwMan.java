@@ -45,7 +45,7 @@ public class PwdAwMan {
             int result = 0;
             int i = 0;
             while (o1.size() > i && o2.size() > i && result == 0) {
-                result = o1.get(i).compareTo(o2.get(i));
+                result = o1.get(i).compareToIgnoreCase(o2.get(i));
                 i++;
             }
             return result;
@@ -167,6 +167,7 @@ public class PwdAwMan {
 
             if (pwd.equals(pwd2)) {
                 e.setPassword(pwd);
+                return;
             } else {
                 counter++;
                 System.err.println("Passwords do not match.");
@@ -239,9 +240,14 @@ public class PwdAwMan {
         String csv = ParseUtil.toCSV(dataTable);
         String filename;
 
-        if (cmd.size() > 2 && cmd.get(1).equals("-e")) {
-            isEncrypted = true;
-            setPwdAskTwice(enc);
+        if (cmd.size() > 2) {
+            if (cmd.get(1).equals("-e")) {
+                isEncrypted = true;
+                setPwdAskTwice(enc);
+            } else {
+                isEncrypted = false;
+                System.out.println("export: Warn: Saving file unencrypted.");
+            }
             filename = cmd.get(2);
         } else {
             filename = cmd.get(1);
