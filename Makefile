@@ -18,7 +18,7 @@ $(DIR)ParseUtil.class: $(DIR)ParseUtil.java
 	javac -cp $(LIBS) $(DIR)ParseUtil.java
 
 PwdAwMan.jar: default
-	jar -c --no-compress -f PwdAwMan.jar -m $(DIR)manifest.txt $(CLASSES)
+	jar -c --no-compress -f PwdAwMan.jar -m $(DIR)manifest.txt $(DIR)*.class
 
 clean:
 	rm $(CLASSES) PwdAwMan.jar
