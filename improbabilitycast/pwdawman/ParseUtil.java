@@ -63,7 +63,15 @@ public class ParseUtil {
 
     public static void parseCSV(List<List<String>> table, String csv) {
         table.clear();
-        for (String s : csv.split("\n|\r\n")) {
+        csv = csv.replace("\r\n", "\n");
+        List<String> lines = splitWithQuotes(csv, '\n');
+
+        // remove empty line that occurs if file ends with newline
+        if (lines.size() > 0 && lines.get(lines.size() - 1).length() == 0) {
+            lines.remove(lines.size() - 1);
+        }
+
+        for (String s : lines) {
             List<String> row = splitWithQuotes(s, ',');
             csvUnEscapeRow(row);
             row.add(0, String.valueOf(table.size()));
@@ -85,7 +93,8 @@ public class ParseUtil {
         }
         sb.append('\"');
 
-        if (s.contains(",")) {
+        // escape newlines and commas as these are delimters in csv files
+        if (s.contains(",") || s.contains("\n")) {
             return sb.toString();
         } else {
             return sb.substring(1, sb.length() - 1);
