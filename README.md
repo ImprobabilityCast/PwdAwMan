@@ -12,4 +12,4 @@ Nothing fancy. Run `make PwdAwMan.jar`. Note that this project uses [jasypt-1.9.
 Other versions may work as well. The Makefile should work if the
 Jasypt jar file is in the same directory as the Makefile.
 
-![Creeper face with key](https://raw.githubusercontent.com/ImprobabilityCast/PwdAwMan/master/CreeperFace.ico)
+![Creeper face with key](https://raw.githubusercontent.com/ImprobabilityCast/PwdAwMan/master/CreeperFace.png)
