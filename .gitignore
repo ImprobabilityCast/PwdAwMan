@@ -1,3 +1,5 @@
 *.class
+*.jar
+
 # Ignore test files
 *.csv
