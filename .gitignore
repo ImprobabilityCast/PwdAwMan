@@ -3,3 +3,5 @@
 
 # Ignore test files
 *.csv
+# Ignore icons
+*.ico
