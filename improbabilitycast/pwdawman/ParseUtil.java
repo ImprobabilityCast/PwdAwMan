@@ -34,11 +34,11 @@ public class ParseUtil {
         return list;
     }
 
-    private static String csvUnEscape(String s) {
+    public static String unEscapeQuotes(String s) {
         StringBuilder sb = new StringBuilder(s);
         boolean slash = false;
 
-        if (sb.length() > 0 && sb.charAt(0) == '"'
+        if (sb.length() > 1 && sb.charAt(0) == '"'
                 && sb.charAt(sb.length() - 1) == '"') {
             sb.deleteCharAt(sb.length() - 1);
             sb.deleteCharAt(0);
@@ -55,9 +55,9 @@ public class ParseUtil {
         return sb.toString();
     }
 
-    private static void csvUnEscapeRow(List<String> row) {
+    public static void unEscapeRow(List<String> row) {
         for (int i = 0; i < row.size(); i++) {
-            row.set(i, csvUnEscape(row.get(i)));
+            row.set(i, unEscapeQuotes(row.get(i)));
         }
     }
 
@@ -73,7 +73,7 @@ public class ParseUtil {
 
         for (String s : lines) {
             List<String> row = splitWithQuotes(s, ',');
-            csvUnEscapeRow(row);
+            unEscapeRow(row);
             row.add(0, String.valueOf(table.size()));
             row.remove(0);
             table.add(row);

@@ -215,6 +215,7 @@ public class PwdAwMan {
             }
             cmd.remove(0);
             binarySearchInsert(dataTable, cmd);
+
             DisplayUtil.updatePaddingIDCol(String.valueOf(dataTable.size()));
             DisplayUtil.updatePaddingRow(cmd);
             isModified = true;
@@ -268,10 +269,10 @@ public class PwdAwMan {
             return "find: invalid command syntax";
         }
 
-        String term = cmd.get(1);
+        String term = cmd.get(1).toLowerCase();
         Deque<Integer> results = new ArrayDeque<>();
         for (int i = 0; i < dataTable.size(); i++) {
-            if (dataTable.get(i).toString().contains(term)) {
+            if (dataTable.get(i).toString().toLowerCase().contains(term)) {
                 results.push(i);
             }
         }
@@ -293,7 +294,7 @@ public class PwdAwMan {
             + "export [-e] <filename>\n"
             + "\tSaves everything to a file. If the -e is supplied, then the file\n"
             + "\twill be encrypted.\n"
-            + "find <term>\n"
+            + "find <term> - case insensitive\n"
             + "help - prints this\n"
             + "quit - quits, you may be asked if you want to save changes\n"
             + "remove <id>\n"
@@ -308,10 +309,11 @@ public class PwdAwMan {
     }
 
     private static String remove(List<String> cmd, int id) {
-        if (id < 0 || id >= cmd.size()) {
+        if (id < 0 || id >= dataTable.size()) {
             return "remove: invalid command sytax";
         } else {
-            cmd.remove(id);
+            dataTable.remove(id);
+			isModified = true;
             return "";
         }
     }
@@ -367,6 +369,7 @@ public class PwdAwMan {
             String errMsg = "";
             try {
                 List<String> cmd = ParseUtil.splitWithQuotes(in.nextLine(), ' ');
+                ParseUtil.unEscapeRow(cmd);
                 key = cmd.get(0);
                 errMsg = processCmd(cmd, cmdTable);
             } catch (Exception e) {
@@ -461,5 +464,7 @@ public class PwdAwMan {
 
         run(in, data);
         cleanup(in, filename);
+		// call exit becaue clipboard usaged messes with normal exiting
+		System.exit(0);
     }
 }
