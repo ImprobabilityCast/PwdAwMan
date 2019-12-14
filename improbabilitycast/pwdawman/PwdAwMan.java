@@ -30,7 +30,7 @@ public class PwdAwMan {
     }
 
     private static final int VERSION_MAJOR = 0;
-    private static final int VERSION_MINOR = 1;
+    private static final int VERSION_MINOR = 2;
     
     private static boolean isModified = false;
     private static boolean isEncrypted = true;
@@ -289,6 +289,7 @@ public class PwdAwMan {
         return "Command syntax:\n"
             + "COL_NAME is one of: <place|type|url|username|password|note>\n\n"
             + "add <place> <type> <url> <username> <password> <note>\n"
+            // TODO maybe add new syntax for add: add colname=value
             + "\tOmiting arguments from add will keep those fields blank.\n"
             + "copy <id> COL_NAME\n"
             + "export [-e] <filename>\n"
@@ -300,7 +301,7 @@ public class PwdAwMan {
             + "remove <id>\n"
             + "replace <id> COL_NAME <replacement>\n"
             + "show <id> COL_NAME\n"
-            + "\tIf none/incorrent arguments are supplied to show, it will show everything.\n";
+            + "\tIf none/incorrect arguments are supplied to show, it will show everything.\n";
     }
 
     // this method exists so that the "invaild command" msg doesn't print
@@ -389,6 +390,7 @@ public class PwdAwMan {
      */
 
     private static void initCmdTable(Map<String, Action> cmdTable) {
+        cmdTable.put("about", (a, b, c) -> about());
         cmdTable.put("add", (a, b, c) -> add(a));
         cmdTable.put("copy", (a, b, c) -> copy(a, b, c));
         cmdTable.put("export", (a, b, c) -> export(a));
@@ -400,10 +402,15 @@ public class PwdAwMan {
         cmdTable.put("show", (a, b, c) -> show(a, b, c));
     }
 
-    private static void printHelp() {
+    private static String about() {
         System.out.println("PwdAwMan v" + VERSION_MAJOR + "."
-            + VERSION_MINOR + " - A simple password manager.\n\n"
-            + "USAGE: <this> [OPTION] FILE\n"
+            + VERSION_MINOR + " - A simple password manager.\n");
+        return "";
+    }
+
+    private static void printHelp() {
+        about();
+        System.out.println("USAGE: <this> [OPTION] FILE\n"
             + "OPTION:\n"
             + "\t-p\tread file as a plain text CSV file\n"
             + "FILE: a CSV file, possibly encrypted\n"
@@ -419,6 +426,11 @@ public class PwdAwMan {
             }
             tryAgainSave(in, data);
         }
+
+        // clear clipboard in case there are any passwords in it
+        StringSelection empty = new StringSelection("");
+        Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clip.setContents(empty, empty);
     }
 
     private static void run(Scanner in, String data) {
@@ -464,7 +476,7 @@ public class PwdAwMan {
 
         run(in, data);
         cleanup(in, filename);
-		// call exit becaue clipboard usaged messes with normal exiting
+		// call exit becaue clipboard usage messes with normal exiting
 		System.exit(0);
     }
 }
